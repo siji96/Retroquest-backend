@@ -29,11 +29,10 @@ router.post('/', async (req, res) => {
       source: 'retro_card', ref_id: card.id,
     });
 
-    // Broadcast — mask content for other players during submit phase
+    // Broadcast full card to everyone — all players see each other's cards
     req.app.locals.io?.to(room_id).emit('card_added', {
       ...card,
-      content: null,   // masked until vote phase
-      _player_id: player_id,  // so submitter can see their own
+      _player_id: player_id,
     });
 
     res.json({ card });
