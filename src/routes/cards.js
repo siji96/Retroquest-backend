@@ -107,6 +107,35 @@ router.post('/:id/vote', async (req, res) => {
   }
 });
 
+// ── POST /api/cards/:id/unvote  — remove a vote ──────────────
+router.post('/:id/unvote', async (req, res) => {
+  try {
+    const { room_id, voter_id } = req.body;
+    const card_id = req.params.id;
+
+    await supabase
+      .from('card_votes')
+      .delete()
+      .eq('card_id', card_id)
+      .eq('voter_id', voter_id);
+
+    // Decrement vote_count on the card
+    const { data: card } = await supabase
+      .from('retro_cards').select('vote_count').eq('id', card_id).single();
+
+    const newCount = Math.max(0, (card?.vote_count ?? 1) - 1);
+    await supabase.from('retro_cards').update({ vote_count: newCount }).eq('id', card_id);
+
+    req.app.locals.io?.to(room_id).emit('card_voted', {
+      card_id, voter_id, vote_count: newCount,
+    });
+
+    res.json({ vote_count: newCount });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── POST /api/cards/:id/comment  — add a comment ─────────────
 router.post('/:id/comment', async (req, res) => {
   try {
