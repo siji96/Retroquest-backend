@@ -82,6 +82,25 @@ export function registerSocketHandlers(io) {
       socket.to(room_id).emit('review_navigate', { card_index });
     });
 
+    // ── timer_tick  (host broadcasts every second) ─────────────
+    socket.on('timer_tick', ({ room_id, timer, phase }) => {
+      if (!room_id) return;
+      // Relay to all OTHER sockets in room (not back to host)
+      socket.to(room_id).emit('timer_sync', { timer, phase });
+    });
+
+    // ── ice_reveal  (host triggers reveal for everyone) ─────────
+    socket.on('ice_reveal', ({ room_id, q_idx, answer_counts, player_picks }) => {
+      if (!room_id) return;
+      socket.to(room_id).emit('ice_reveal', { q_idx, answer_counts, player_picks });
+    });
+
+    // ── ice_next_q  (host advances to next question) ────────────
+    socket.on('ice_next_q', ({ room_id, q_idx }) => {
+      if (!room_id) return;
+      socket.to(room_id).emit('ice_next_q', { q_idx });
+    });
+
     // ── player_left_voluntary (intentional leave via Leave Room button) ──
     socket.on('player_left_voluntary', async ({ room_id, player_id }) => {
       if (!room_id || !player_id) return;
