@@ -82,6 +82,16 @@ export function registerSocketHandlers(io) {
       socket.to(room_id).emit('review_navigate', { card_index });
     });
 
+    // ── player_left_voluntary (intentional leave via Leave Room button) ──
+    socket.on('player_left_voluntary', async ({ room_id, player_id }) => {
+      if (!room_id || !player_id) return;
+      // Remove player from DB
+      await supabase.from('players').delete().eq('id', player_id);
+      // Broadcast immediately — this is intentional
+      io.to(room_id).emit('player_left', { player_id });
+      console.log(`[socket] voluntary leave: ${player_id}`);
+    });
+
     // ── disconnect ─────────────────────────────────────────
     socket.on('disconnect', async () => {
       const { room_id, player_id } = socket.data;
@@ -92,8 +102,32 @@ export function registerSocketHandlers(io) {
           .update({ last_seen_at: new Date().toISOString() })
           .eq('id', player_id);
 
-        // Notify room — client decides whether to show "left" indicator
-        io.to(room_id).emit('player_left', { player_id });
+        // ✅ Grace period: wait 8s before broadcasting player_left
+        // This prevents false removals on refresh/reconnect
+        setTimeout(async () => {
+          // Check if player reconnected (last_seen_at updated recently)
+          const { data: p } = await supabase
+            .from('players')
+            .select('last_seen_at, id')
+            .eq('id', player_id)
+            .single();
+
+          if (!p) return; // player was voluntarily removed already
+
+          const lastSeen = new Date(p.last_seen_at).getTime();
+          const now = Date.now();
+          const secondsSince = (now - lastSeen) / 1000;
+
+          // If last_seen was updated within the grace period → player reconnected
+          if (secondsSince < 7) {
+            console.log(`[socket] ${player_id} reconnected — skip player_left`);
+            return;
+          }
+
+          // Player truly gone — notify room
+          io.to(room_id).emit('player_left', { player_id });
+          console.log(`[socket] confirmed left: ${player_id}`);
+        }, 8000);
       }
     });
   });
