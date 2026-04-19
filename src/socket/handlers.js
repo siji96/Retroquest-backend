@@ -102,7 +102,7 @@ export function registerSocketHandlers(io) {
           .update({ last_seen_at: new Date().toISOString() })
           .eq('id', player_id);
 
-        // ✅ Grace period: wait 8s before broadcasting player_left
+        // ✅ Grace period: wait 20s before broadcasting player_left
         // This prevents false removals on refresh/reconnect
         setTimeout(async () => {
           // Check if player reconnected (last_seen_at updated recently)
@@ -119,7 +119,7 @@ export function registerSocketHandlers(io) {
           const secondsSince = (now - lastSeen) / 1000;
 
           // If last_seen was updated within the grace period → player reconnected
-          if (secondsSince < 7) {
+          if (secondsSince < 18) {
             console.log(`[socket] ${player_id} reconnected — skip player_left`);
             return;
           }
@@ -127,7 +127,7 @@ export function registerSocketHandlers(io) {
           // Player truly gone — notify room
           io.to(room_id).emit('player_left', { player_id });
           console.log(`[socket] confirmed left: ${player_id}`);
-        }, 8000);
+        }, 20000);
       }
     });
   });
