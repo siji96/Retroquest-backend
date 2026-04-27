@@ -2,26 +2,33 @@
   "name": "retroquest-backend",
   "version": "1.1.0",
   "type": "module",
-  "description": "RetroQuest \u2014 real-time backend (Node.js + Socket.IO + Supabase)",
+  "description": "RetroQuest — real-time backend (Node.js + Socket.IO + Supabase)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "lint": "node --check src/index.js"
+    "lint": "node --check src/index.js",
+    "db:init": "node dev-db/apply.js",
+    "admin:init": "node dev-db/seed-admin.js",
+    "admin:reset": "node dev-db/seed-admin.js --reset"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.4.1",
     "helmet": "^7.1.0",
     "socket.io": "^4.7.5",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "pg": "^8.20.0",
+    "socket.io-client": "^4.8.3"
   }
 }
